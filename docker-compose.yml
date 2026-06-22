@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: corruption
+      POSTGRES_USER: ${POSTGRES_USER:-corruption}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  client-bot:
+    build: .
+    restart: always
+    command: uv run python -m client_bot.main
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+
+  admin-bot:
+    build: .
+    restart: always
+    command: uv run python -m admin_bot.main
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: .
+    restart: always
+    command: uv run celery -A admin_bot.worker worker --loglevel=info
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:
