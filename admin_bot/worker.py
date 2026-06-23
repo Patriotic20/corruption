@@ -18,11 +18,6 @@ def _build_status_keyboard(report_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="🆕 Yangi", callback_data=f"set_status:{report_id}:new"),
-                InlineKeyboardButton(text="🔄 Jarayonda", callback_data=f"set_status:{report_id}:in_progress"),
-                InlineKeyboardButton(text="✔️ Yakunlandi", callback_data=f"set_status:{report_id}:done"),
-            ],
-            [
                 InlineKeyboardButton(text="💬 Javob berish", callback_data=f"reply_to:{report_id}"),
             ],
         ]

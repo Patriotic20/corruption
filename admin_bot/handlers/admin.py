@@ -85,9 +85,7 @@ async def cmd_start(message: Message) -> None:
 
     await message.answer(
         f"Salom, {message.from_user.full_name}!\n\n"
-        "/list — murojaatlar ro'yxati\n"
-        "/status <id> <holat> — holatni o'zgartirish\n"
-        "Holatlar: new | in_progress | done"
+        "/list — murojaatlar ro'yxati"
     )
 
 
@@ -137,73 +135,6 @@ async def handle_filter_list(callback: CallbackQuery) -> None:
     raw = callback.data.split(":", 1)[1]
     status_filter = None if raw == "all" else raw
     await _send_list(callback, status_filter=status_filter)
-
-
-# ─── /status command ─────────────────────────────────────────────────────────
-
-@router.message(Command("status"))
-async def cmd_status(message: Message) -> None:
-    if not message.from_user or not _is_admin(message.from_user.id):
-        await message.answer("Kirish taqiqlangan.")
-        return
-
-    if not message.text:
-        return
-
-    parts = message.text.split(maxsplit=2)
-    if len(parts) != 3 or not parts[1].isdigit():
-        await message.answer("Format: /status <id> <holat>\nMisol: /status 5 in_progress")
-        return
-
-    report_id, new_status = int(parts[1]), parts[2].strip()
-    allowed = {"new", "in_progress", "done"}
-    if new_status not in allowed:
-        await message.answer(f"Ruxsat etilgan holatlar: {', '.join(allowed)}")
-        return
-
-    async with get_session() as session:
-        report = await session.get(Report, report_id)
-        if not report:
-            await message.answer(f"#{report_id} murojaat topilmadi.")
-            return
-        report.status = new_status
-        user_id = report.user_id
-        await session.commit()
-
-    await _notify_user(user_id, report_id, new_status)
-    await message.answer(
-        f"✅ Murojaat #{report_id} → holat <b>{STATUS_UZ.get(new_status, new_status)}</b>",
-        parse_mode="HTML",
-    )
-
-
-# ─── Inline status button ─────────────────────────────────────────────────────
-
-@router.callback_query(F.data.startswith("set_status:"))
-async def handle_status_button(callback: CallbackQuery) -> None:
-    if not callback.from_user or not _is_admin(callback.from_user.id):
-        await callback.answer("Kirish taqiqlangan.", show_alert=True)
-        return
-
-    _, report_id_str, new_status = callback.data.split(":", 2)
-    report_id = int(report_id_str)
-
-    async with get_session() as session:
-        report = await session.get(Report, report_id)
-        if not report:
-            await callback.answer("Murojaat topilmadi.", show_alert=True)
-            return
-        report.status = new_status
-        user_id = report.user_id
-        await session.commit()
-
-    await _notify_user(user_id, report_id, new_status)
-
-    status_label = STATUS_UZ.get(new_status, new_status)
-    await callback.answer(f"✅ Holat: {status_label}")
-
-    if callback.message:
-        await callback.message.edit_reply_markup(reply_markup=None)
 
 
 # ─── Reply to citizen ─────────────────────────────────────────────────────────
