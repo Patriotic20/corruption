@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     bot_token_admin: str = ""
     postgres_dsn: str = "postgresql+asyncpg://corruption:secret@localhost:5432/corruption"
     redis_url: str = "redis://localhost:6379/0"
-    admin_ids: str = ""  # comma-separated, e.g. "123456789,987654321"
+    # super-admins (owners), comma-separated, e.g. "123456789,987654321".
+    # Ordinary admins are added from the bot itself via /add_admin.
+    admin_ids: str = ""
+    admin_invite_ttl_days: int = 7
 
     @property
     def admin_id_list(self) -> list[int]:

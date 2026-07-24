@@ -38,10 +38,6 @@ class AdminReplyState(StatesGroup):
     waiting_for_text = State()
 
 
-def _is_admin(user_id: int) -> bool:
-    return user_id in settings.admin_id_list
-
-
 async def _notify_user(user_id: int, report_id: int, new_status: str) -> None:
     status_label = STATUS_UZ.get(new_status, new_status)
     client_bot = Bot(token=settings.bot_token_client)
@@ -60,33 +56,15 @@ async def _notify_user(user_id: int, report_id: int, new_status: str) -> None:
 # ─── /start ──────────────────────────────────────────────────────────────────
 
 @router.message(Command("start"))
-async def cmd_start(message: Message) -> None:
-    if not message.from_user or not _is_admin(message.from_user.id):
-        await message.answer(
-            f"Kirish taqiqlangan.\n\nSizning Telegram ID: <code>{message.from_user.id if message.from_user else '?'}</code>\n"
-            f"Uni .env ga qo'shing → <code>ADMIN_IDS=sizning_id</code>",
-            parse_mode="HTML",
-        )
-        return
-
-    async with get_session() as session:
-        existing = await session.scalar(
-            select(Admin).where(Admin.telegram_id == message.from_user.id)
-        )
-        if not existing:
-            session.add(
-                Admin(
-                    telegram_id=message.from_user.id,
-                    name=message.from_user.full_name,
-                    is_active=True,
-                )
-            )
-            await session.commit()
-
-    await message.answer(
-        f"Salom, {message.from_user.full_name}!\n\n"
-        "/list — murojaatlar ro'yxati"
-    )
+async def cmd_start(message: Message, admin: Admin) -> None:
+    lines = [f"Salom, {admin.name}!", "", "/list — murojaatlar ro'yxati"]
+    if admin.role == "super":
+        lines += [
+            "/admins — administratorlar ro'yxati",
+            "/add_admin — yangi administrator qo'shish",
+            "/remove_admin — administratorni o'chirish",
+        ]
+    await message.answer("\n".join(lines))
 
 
 # ─── /list ───────────────────────────────────────────────────────────────────
@@ -121,17 +99,11 @@ async def _send_list(target: Message | CallbackQuery, status_filter: str | None)
 
 @router.message(Command("list"))
 async def cmd_list(message: Message) -> None:
-    if not message.from_user or not _is_admin(message.from_user.id):
-        await message.answer("Kirish taqiqlangan.")
-        return
     await _send_list(message, status_filter=None)
 
 
 @router.callback_query(F.data.startswith("filter_list:"))
 async def handle_filter_list(callback: CallbackQuery) -> None:
-    if not callback.from_user or not _is_admin(callback.from_user.id):
-        await callback.answer("Kirish taqiqlangan.", show_alert=True)
-        return
     raw = callback.data.split(":", 1)[1]
     status_filter = None if raw == "all" else raw
     await _send_list(callback, status_filter=status_filter)
@@ -141,10 +113,6 @@ async def handle_filter_list(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("reply_to:"))
 async def handle_reply_button(callback: CallbackQuery, state: FSMContext) -> None:
-    if not callback.from_user or not _is_admin(callback.from_user.id):
-        await callback.answer("Kirish taqiqlangan.", show_alert=True)
-        return
-
     report_id = int(callback.data.split(":", 1)[1])
     await state.set_state(AdminReplyState.waiting_for_text)
     await state.update_data(report_id=report_id)
@@ -155,9 +123,15 @@ async def handle_reply_button(callback: CallbackQuery, state: FSMContext) -> Non
         )
 
 
+@router.message(AdminReplyState.waiting_for_text, Command("cancel"))
+async def cmd_cancel_reply(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await message.answer("Bekor qilindi.")
+
+
 @router.message(AdminReplyState.waiting_for_text)
-async def handle_reply_text(message: Message, state: FSMContext) -> None:
-    if not message.text or not message.from_user:
+async def handle_reply_text(message: Message, state: FSMContext, admin: Admin) -> None:
+    if not message.text:
         return
 
     data = await state.get_data()
@@ -170,12 +144,8 @@ async def handle_reply_text(message: Message, state: FSMContext) -> None:
             await state.clear()
             return
 
-        admin = await session.scalar(
-            select(Admin).where(Admin.telegram_id == message.from_user.id)
-        )
-        if admin:
-            session.add(Reply(report_id=report_id, admin_id=admin.id, text=message.text))
-            await session.commit()
+        session.add(Reply(report_id=report_id, admin_id=admin.id, text=message.text))
+        await session.commit()
 
         user_id = report.user_id
 

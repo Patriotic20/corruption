@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import BigInteger, ForeignKey, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -13,7 +13,21 @@ class Admin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     name: Mapped[str] = mapped_column(String(255))
+    username: Mapped[str | None] = mapped_column(String(255))  # lowercase, without "@"
+    role: Mapped[str] = mapped_column(String(20), default="admin")  # super | admin
     is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class AdminInvite(Base):
+    __tablename__ = "admin_invites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(255), unique=True)  # lowercase, without "@"
+    invited_by: Mapped[int | None] = mapped_column(ForeignKey("admins.id"))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class Report(Base):

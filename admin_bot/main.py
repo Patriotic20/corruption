@@ -5,6 +5,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from admin_bot.handlers.admin import router
+from admin_bot.handlers.manage import router as manage_router
+from admin_bot.middlewares import AdminAuthMiddleware
 from shared.config import settings
 from shared.database import init_db
 
@@ -15,7 +17,10 @@ async def main() -> None:
     init_db(settings.postgres_dsn)
     bot = Bot(token=settings.bot_token_admin)
     dp = Dispatcher(storage=MemoryStorage())
+    dp.message.outer_middleware(AdminAuthMiddleware())
+    dp.callback_query.outer_middleware(AdminAuthMiddleware())
     dp.include_router(router)
+    dp.include_router(manage_router)
     await dp.start_polling(bot)
 
 
