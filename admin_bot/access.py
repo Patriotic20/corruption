@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from aiogram.types import User
 from sqlalchemy import select
@@ -21,10 +21,6 @@ def normalize_username(raw: str) -> str | None:
 
 def is_super_id(user_id: int) -> bool:
     return user_id in settings.admin_id_list
-
-
-def invite_expires_at() -> datetime:
-    return datetime.now() + timedelta(days=settings.admin_invite_ttl_days)
 
 
 async def resolve_admin(session: AsyncSession, user: User) -> Admin | None:
@@ -64,7 +60,6 @@ async def resolve_admin(session: AsyncSession, user: User) -> Admin | None:
         select(AdminInvite).where(
             AdminInvite.username == username,
             AdminInvite.used_at.is_(None),
-            AdminInvite.expires_at > datetime.now(),
         )
     )
     if invite is None:

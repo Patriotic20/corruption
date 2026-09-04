@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, MessageOriginUser
 from sqlalchemy import select
 
-from admin_bot.access import invite_expires_at, is_super_id, normalize_username
+from admin_bot.access import is_super_id, normalize_username
 from shared.database import get_session
 from shared.models import Admin, AdminInvite
 
@@ -61,8 +61,7 @@ async def cmd_admins(message: Message, admin: Admin) -> None:
     if invites:
         lines.append("\n<b>Kutilayotgan takliflar:</b>")
         for inv in invites:
-            expires = inv.expires_at.strftime("%d.%m.%Y")
-            lines.append(f"@{inv.username} — {expires} gacha")
+            lines.append(f"@{inv.username}")
 
     await message.answer("\n".join(lines), parse_mode="HTML")
 
@@ -86,12 +85,10 @@ async def _grant_by_username(session, username: str, invited_by: int) -> str:
         session.add(invite)
     invite.invited_by = invited_by
     invite.used_at = None
-    invite.expires_at = invite_expires_at()
     await session.commit()
 
     return (
-        f"✅ @{username} uchun taklif yaratildi "
-        f"({invite.expires_at.strftime('%d.%m.%Y')} gacha amal qiladi).\n\n"
+        f"✅ @{username} uchun taklif yaratildi.\n\n"
         "Unga botga /start yuborishni ayting — shundan keyin u administrator bo'ladi."
     )
 

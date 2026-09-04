@@ -26,7 +26,6 @@ class AdminInvite(Base):
     username: Mapped[str] = mapped_column(String(255), unique=True)  # lowercase, without "@"
     invited_by: Mapped[int | None] = mapped_column(ForeignKey("admins.id"))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(DateTime)
     used_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 

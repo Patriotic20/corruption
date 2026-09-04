@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     # super-admins (owners), comma-separated, e.g. "123456789,987654321".
     # Ordinary admins are added from the bot itself via /add_admin.
     admin_ids: str = ""
-    admin_invite_ttl_days: int = 7
 
     @property
     def admin_id_list(self) -> list[int]:
