@@ -1,0 +1,25 @@
+# Local development overlay — never used on the server.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Publishes the datastores on the host and mounts the source tree so a code
+# change only needs a container restart, not a rebuild.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6380:6379"
+
+  client-bot:
+    volumes:
+      - .:/app
+
+  admin-bot:
+    volumes:
+      - .:/app
+
+  worker:
+    volumes:
+      - .:/app

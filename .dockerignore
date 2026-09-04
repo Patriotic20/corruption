@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+wheels/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Docs & compose (not needed inside the image)
+README.md
+DEPLOY.md
+docker-compose*.yml

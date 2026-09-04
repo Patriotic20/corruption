@@ -15,3 +15,7 @@ wheels/
 # IDE
 .idea/
 .vscode/
+
+# Local env overrides
+.env.*
+!.env.example
