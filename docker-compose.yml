@@ -1,10 +1,10 @@
 name: corruption
 
 x-app: &app
+  # Only `migrate` below carries the build; everyone else reuses the finished tag.
+  # Four services exporting the same tag in parallel breaks the build.
   image: corruption-app:latest
-  build:
-    context: .
-    dockerfile: Dockerfile
+  pull_policy: never
   env_file: .env
   environment:
     TZ: ${TZ:-Asia/Tashkent}
@@ -78,6 +78,10 @@ services:
   migrate:
     <<: *app
     container_name: corruption_migrate
+    # the single build of the image shared by every app service
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: ["alembic", "upgrade", "head"]
     restart: "no"
     depends_on:
