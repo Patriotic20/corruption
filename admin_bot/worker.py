@@ -59,6 +59,14 @@ async def _send_notification(report_id: int) -> None:
             logger.warning("Report #%s not found", report_id)
             return
 
+        if not admins:
+            logger.warning(
+                "Report #%s has no active admin to notify — the admins table is empty. "
+                "An admin row appears once someone listed in ADMIN_IDS sends /start to the admin bot.",
+                report_id,
+            )
+            return
+
         text = (
             f"📨 <b>Yangi murojaat #{report.id}</b>\n\n"
             f"📋 Holat: <b>{report.status}</b>\n\n"
